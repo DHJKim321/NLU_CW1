@@ -86,11 +86,11 @@ class RNN(Model):
 		'''
 		for t in reversed(range(len(x))):
 			# deltaW Updates
-			delta_out = np.dot((d[t] - y[t]), np.ones_like(len(d)))
+			delta_out = (d[t] - y[t]) * np.ones_like(len(d[t] - y[t]))
 			self.deltaW += np.outer(delta_out, s[t])
 
 			# deltaV Updates
-			delta_in = np.dot((np.transpose(self.W) @ delta_out), np.dot(s[t], (np.ones_like(len(s[t])) - s[t])))
+			delta_in = np.dot(np.transpose(self.W), delta_out) * grad(s[t])
 			self.deltaV += np.outer(delta_in, x[t])
 
 			# deltaU Updates
@@ -142,7 +142,7 @@ class RNN(Model):
 			self.deltaW += np.outer(delta_out, s[t])
 
 			delta_in = np.dot((np.transpose(self.W) @ delta_out), np.dot(s[t], (np.ones_like(len(s[t])) - s[t])))
-			for t_ in range(len(steps)+1):
+			for t_ in range(steps+1):
 				# deltaV Updates
 				delta_in_T = np.dot(np.transpose(self.U) @ delta_in, np.dot(s[t-t_], (np.ones_like(len(s[t-t_])-s[t-t_]))))
 				self.deltaV += np.outer(delta_in_T, x[t-t_])
