@@ -41,13 +41,10 @@ class Runner(object):
         '''
         loss = 0.
         y, _ = self.model.predict(x)
-        print(x.shape)
-        print(y.shape)
-        print(d.shape)
         for t in range(len(x)):
-            y_true = make_onehot(d[t], len(d))
+            y_true = make_onehot(d[t], self.model.vocab_size)
             log_y_pred = np.log(y[t])
-            loss -= y_true * log_y_pred
+            loss -= np.dot(y_true, log_y_pred)
         return loss
 
     def compute_loss_np(self, x, d):
@@ -97,10 +94,11 @@ class Runner(object):
         return mean_loss		average loss over all words in D
         '''
         mean_loss = 0.
+        word_count = 0
         for x, d in zip(X, D):
-            mean_loss += self.compute_loss(x, d) / len(x)
-        mean_loss /= len(X)
-        return mean_loss
+            mean_loss += self.compute_loss(x, d)
+            word_count += len(x)
+        return mean_loss / word_count
 
     def train(self, X, D, X_dev, D_dev, epochs=10, learning_rate=0.5, anneal=5, back_steps=0, batch_size=100,
               min_change=0.0001, log=True):
