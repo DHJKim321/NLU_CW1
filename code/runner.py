@@ -39,13 +39,15 @@ class Runner(object):
 
         return loss		the combined loss for all words
         '''
-
         loss = 0.
-
-        ##########################
-        # --- your code here --- #
-        ##########################
-
+        y, _ = self.model.predict(x)
+        print(x.shape)
+        print(y.shape)
+        print(d.shape)
+        for t in range(len(x)):
+            y_true = make_onehot(d[t], len(d))
+            log_y_pred = np.log(y[t])
+            loss -= y_true * log_y_pred
         return loss
 
     def compute_loss_np(self, x, d):
@@ -94,13 +96,10 @@ class Runner(object):
 
         return mean_loss		average loss over all words in D
         '''
-
         mean_loss = 0.
-
-        ##########################
-        # --- your code here --- #
-        ##########################
-
+        for x, d in zip(X, D):
+            mean_loss += self.compute_loss(x, d) / len(x)
+        mean_loss /= len(X)
         return mean_loss
 
     def train(self, X, D, X_dev, D_dev, epochs=10, learning_rate=0.5, anneal=5, back_steps=0, batch_size=100,
@@ -432,9 +431,9 @@ if __name__ == "__main__":
         # this is the best expected loss out of that set
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
-        ##########################
-        # --- your code here --- #
-        ##########################
+        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+        runner = Runner(rnn)
+        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev)
 
         run_loss = -1
         adjusted_loss = -1

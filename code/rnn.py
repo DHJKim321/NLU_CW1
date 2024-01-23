@@ -61,12 +61,11 @@ class RNN(Model):
 		y = np.zeros((len(x), self.out_vocab_size))
 
 		for t in range(len(x)):
-			
-			##########################
-			# --- your code here --- #
-			##########################
-
-
+			one_hot_x = make_onehot(x[t], self.vocab_size)
+			net_in = (self.V @ one_hot_x) + (self.U @ s[t-1])
+			s[t] = sigmoid(net_in)
+			net_out = self.W @ s[t]
+			y[t] = softmax(net_out)
 		return y, s
 	
 	def acc_deltas(self, x, d, y, s):
@@ -85,11 +84,17 @@ class RNN(Model):
 		
 		no return values
 		'''
-
 		for t in reversed(range(len(x))):
-			##########################
-			# --- your code here --- #
-			##########################
+			# deltaW Updates
+			delta_out = np.dot((d[t] - y[t]), np.ones_like(len(d)))
+			self.deltaW += np.outer(delta_out, s[t])
+
+			# deltaV Updates
+			delta_in = np.dot((np.transpose(self.W) @ delta_out), np.dot(s[t], (np.ones_like(len(s[t])) - s[t])))
+			self.deltaV += np.outer(delta_in, x[t])
+
+			# deltaU Updates
+			self.deltaU += np.outer(delta_in, s[t-1])
 
 	def acc_deltas_np(self, x, d, y, s):
 		'''
@@ -132,10 +137,20 @@ class RNN(Model):
 		'''
 
 		for t in reversed(range(len(x))):
-			##########################
-			# --- your code here --- #
-			##########################
+			# deltaW Updates
+			delta_out = np.dot((d[t] - y[t]), np.ones_like(len(d)))
+			self.deltaW += np.outer(delta_out, s[t])
 
+			delta_in = np.dot((np.transpose(self.W) @ delta_out), np.dot(s[t], (np.ones_like(len(s[t])) - s[t])))
+			for t_ in range(len(steps)+1):
+				# deltaV Updates
+				delta_in_T = np.dot(np.transpose(self.U) @ delta_in, np.dot(s[t-t_], (np.ones_like(len(s[t-t_])-s[t-t_]))))
+				self.deltaV += np.outer(delta_in_T, x[t-t_])
+
+				# deltaU Updates
+				self.deltaU += np.outer(delta_in_T, s[t-t_-1])
+
+				delta_in = delta_in_T
 
 	def acc_deltas_bptt_np(self, x, d, y, s, steps):
 		'''
