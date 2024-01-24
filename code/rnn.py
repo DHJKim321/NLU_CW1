@@ -84,14 +84,17 @@ class RNN(Model):
 		
 		no return values
 		'''
+
 		for t in reversed(range(len(x))):
 			# deltaW Updates
-			delta_out = (d[t] - y[t]) * np.ones_like(len(d[t] - y[t]))
+			one_hot_dt = make_onehot(d[t], self.vocab_size)
+			delta_out = one_hot_dt - y[t]
 			self.deltaW += np.outer(delta_out, s[t])
 
 			# deltaV Updates
 			delta_in = np.dot(np.transpose(self.W), delta_out) * grad(s[t])
-			self.deltaV += np.outer(delta_in, x[t])
+			one_hot_xt = make_onehot(x[t], self.vocab_size)
+			self.deltaV += np.outer(delta_in, one_hot_xt)
 
 			# deltaU Updates
 			self.deltaU += np.outer(delta_in, s[t-1])
@@ -138,19 +141,26 @@ class RNN(Model):
 
 		for t in reversed(range(len(x))):
 			# deltaW Updates
-			delta_out = np.dot((d[t] - y[t]), np.ones_like(len(d)))
+			one_hot_dt = make_onehot(d[t], self.vocab_size)
+			delta_out = one_hot_dt - y[t]
 			self.deltaW += np.outer(delta_out, s[t])
 
-			delta_in = np.dot((np.transpose(self.W) @ delta_out), np.dot(s[t], (np.ones_like(len(s[t])) - s[t])))
+			# Initialise first delta_in value
+			delta_in = np.dot(np.transpose(self.W), delta_out) * grad(s[t])
 			for t_ in range(steps+1):
-				# deltaV Updates
-				delta_in_T = np.dot(np.transpose(self.U) @ delta_in, np.dot(s[t-t_], (np.ones_like(len(s[t-t_])-s[t-t_]))))
-				self.deltaV += np.outer(delta_in_T, x[t-t_])
-
-				# deltaU Updates
-				self.deltaU += np.outer(delta_in_T, s[t-t_-1])
-
-				delta_in = delta_in_T
+				one_hot_xt = make_onehot(x[t-t_], self.vocab_size)
+				delta_in_T = np.dot(np.transpose(self.U), delta_in) * grad(s[t-t_])
+				# Initial update when t_ == 0
+				if t_ == 0:
+					self.deltaV += np.outer(delta_in, one_hot_xt)
+					self.deltaU += np.outer(delta_in, s[t-1])
+				# Recursively update t-1, t-2, ..., t-t_
+				else:
+					self.deltaV += np.outer(delta_in_T, one_hot_xt)
+					self.deltaU += np.outer(delta_in_T, s[t-t_-1])
+					# Update delta_in to be current value of delta_in_T
+					# delta_in_T = np.dot(np.transpose(self.U), (delta_in_T+1)) * grad(s[t-t_])
+					delta_in = delta_in_T
 
 	def acc_deltas_bptt_np(self, x, d, y, s, steps):
 		'''
