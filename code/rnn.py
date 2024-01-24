@@ -84,7 +84,6 @@ class RNN(Model):
 		
 		no return values
 		'''
-
 		for t in reversed(range(len(x))):
 			# deltaW Updates
 			one_hot_dt = make_onehot(d[t], self.vocab_size)
@@ -116,10 +115,19 @@ class RNN(Model):
 		
 		no return values
 		'''
+		t = len(x)-1
+		# deltaW Updates
+		one_hot_dt = make_onehot(d[0], self.vocab_size)
+		delta_out = one_hot_dt - y[t]
+		self.deltaW = np.outer(delta_out, s[t])
 
-		##########################
-		# --- your code here --- #
-		##########################
+		# deltaV Updates
+		delta_in = np.dot(np.transpose(self.W), delta_out) * grad(s[t])
+		one_hot_xt = make_onehot(x[t], self.vocab_size)
+		self.deltaV = np.outer(delta_in, one_hot_xt)
+
+		# deltaU Updates
+		self.deltaU = np.outer(delta_in, s[t-1])
 		
 	def acc_deltas_bptt(self, x, d, y, s, steps):
 		'''
@@ -138,7 +146,6 @@ class RNN(Model):
 		
 		no return values
 		'''
-
 		for t in reversed(range(len(x))):
 			# deltaW Updates
 			one_hot_dt = make_onehot(d[t], self.vocab_size)
@@ -180,7 +187,24 @@ class RNN(Model):
 
 		no return values
 		'''
-
-		##########################
-		# --- your code here --- #
-		##########################
+		t = len(x)-1
+		# deltaW Updates
+		one_hot_dt = make_onehot(d[0], self.vocab_size)
+		delta_out = one_hot_dt - y[t]
+		self.deltaW = np.outer(delta_out, s[t])
+		# Initialise first delta_in value
+		delta_in = np.dot(np.transpose(self.W), delta_out) * grad(s[t])
+		for t_ in range(steps+1):
+			one_hot_xt = make_onehot(x[t-t_], self.vocab_size)
+			delta_in_T = np.dot(np.transpose(self.U), delta_in) * grad(s[t-t_])
+			# Initial update when t_ == 0
+			if t_ == 0:
+				self.deltaV += np.outer(delta_in, one_hot_xt)
+				self.deltaU += np.outer(delta_in, s[t-1])
+			# Recursively update t-1, t-2, ..., t-t_
+			else:
+				self.deltaV += np.outer(delta_in_T, one_hot_xt)
+				self.deltaU += np.outer(delta_in_T, s[t-t_-1])
+				# Update delta_in to be current value of delta_in_T
+				# delta_in_T = np.dot(np.transpose(self.U), (delta_in_T+1)) * grad(s[t-t_])
+				delta_in = delta_in_T

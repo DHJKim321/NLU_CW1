@@ -324,7 +324,7 @@ def test():
 	else:
 		print("deltaUr passed\n")
 		print("deltaVr passed\n")
-		print("deltaUz")
+		print("deltaUz passed")
 
 if __name__ == '__main__':
 	test()

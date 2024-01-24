@@ -58,13 +58,12 @@ class Runner(object):
 
         return loss		we only take the prediction from the last time step
         '''
-
         loss = 0.
-
-        ##########################
-        # --- your code here --- #
-        ##########################
-
+        y, _ = self.model.predict(x)
+        t = len(x)-1
+        log_y_pred = np.log(y[t])
+        one_hot_dt = make_onehot(d[0], self.model.vocab_size)
+        loss -= np.dot(one_hot_dt, log_y_pred)
         return loss
 
     def compute_acc_np(self, x, d):
@@ -77,12 +76,8 @@ class Runner(object):
 
         return 1 if argmax(y[t]) == d[0], 0 otherwise
         '''
-
-        ##########################
-        # --- your code here --- #
-        ##########################
-
-        return 0
+        y, _ = self.model.predict(x)
+        return int(np.argmax(y[-1]) == d[0])
 
     def compute_mean_loss(self, X, D):
         '''
@@ -431,10 +426,10 @@ if __name__ == "__main__":
 
         rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
         runner = Runner(rnn)
-        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev)
+        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        run_loss = -1
-        adjusted_loss = -1
+        run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
+        adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
 
         print("Unadjusted: %.03f" % np.exp(run_loss))
         print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
@@ -480,11 +475,11 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        ##########################
-        # --- your code here --- #
-        ##########################
+        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+        runner = Runner(rnn)
+        runner.train_np(X=X_train, D=Y_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = 0.
+        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)])
 
         print("Accuracy: %.03f" % acc)
 
@@ -529,10 +524,10 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        ##########################
-        # --- your code here --- #
-        ##########################
+        gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+        runner = Runner(gru)
+        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = 0.
+        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)])
 
         print("Accuracy: %.03f" % acc)
