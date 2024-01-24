@@ -386,13 +386,14 @@ if __name__ == "__main__":
         code for training language model.
         change this to different values, or use it to get you started with your own testing class
         '''
-        train_size = 1000
+        train_size = 1000 # 25000 Change for 2b)
         dev_size = 1000
         vocab_size = 2000
 
         hdim = int(sys.argv[3])
         lookback = int(sys.argv[4])
         lr = float(sys.argv[5])
+        mode = sys.argv[6]
 
         # get the data set vocabulary
         vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0,
@@ -424,12 +425,44 @@ if __name__ == "__main__":
         # this is the best expected loss out of that set
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
-        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
-        runner = Runner(rnn)
-        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+        if mode == "hyperparameter":
+            hidden_dim_params = [25, 50]
+            lr_params = [0.5, 0.1, 0.05]
+            lookback_params = [0, 2, 5]
+            min_loss = None
+            best_hidden_dim = None
+            best_lr = None
+            best_lookback = None
+            for hidden_dim_param in hidden_dim_params:
+                for lr_param in lr_params:
+                    for lookback_param in lookback_params:
+                        print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hidden_dim_param, lr_param, lookback_param))
+                        rnn = RNN(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=vocab_size)
+                        runner = Runner(rnn)
+                        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr_param, back_steps=lookback_param)
 
-        run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
-        adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
+                        run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
+                        adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
+                        print("Cross Entropy Loss: %.03f" % np.exp(run_loss))
+                        print()
+                        if min_loss == None:
+                            min_loss = run_loss
+                        elif min_loss != None and run_loss < min_loss:
+                            best_hidden_dim = hidden_dim_param
+                            best_lr = lr_param
+                            best_lookback = lookback_param
+                            min_loss = run_loss
+            print("Best parameters: Hidden Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(best_hidden_dim, best_lr, best_lookback))
+        else:
+            rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+            runner = Runner(rnn)
+            runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+
+            run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
+            adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
+            np.save('rnn.U.npy', rnn.U)
+            np.save('rnn.V.npy', rnn.V)
+            np.save('rnn.W.npy', rnn.W)
 
         print("Unadjusted: %.03f" % np.exp(run_loss))
         print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
