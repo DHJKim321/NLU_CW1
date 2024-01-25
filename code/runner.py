@@ -471,12 +471,10 @@ if __name__ == "__main__":
 
             test_run_loss = runner.compute_mean_loss(X=X_test, D=D_test)
             test_adjusted_loss = adjust_loss(test_run_loss, fraction_lost, q)
-
-            print("Unadjusted (Dev): %.03f" % np.exp(dev_run_loss))
-            print("Adjusted for missing vocab (Dev): %.03f" % np.exp(dev_adjusted_loss))
             
-            print("Unadjusted (Test): %.03f" % np.exp(test_run_loss))
-            print("Adjusted for missing vocab (Test): %.03f" % np.exp(test_adjusted_loss))
+            print("Mean Cross Entropy Loss: %.03f" % test_run_loss)
+            print("Unadjusted Perplexity: %.03f" % np.exp(test_run_loss))
+            print("Adjusted Perplexity for missing vocab: %.03f" % np.exp(test_adjusted_loss))
 
             np.save('rnn.U.npy', rnn.U)
             np.save('rnn.V.npy', rnn.V)
