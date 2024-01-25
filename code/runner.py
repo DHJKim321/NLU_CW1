@@ -77,7 +77,8 @@ class Runner(object):
         return 1 if argmax(y[t]) == d[0], 0 otherwise
         '''
         y, _ = self.model.predict(x)
-        return int(np.argmax(y[-1]) == d[0])
+        t = len(x)-1
+        return int(np.argmax(y[t]) == d[0])
 
     def compute_mean_loss(self, X, D):
         '''
@@ -386,7 +387,7 @@ if __name__ == "__main__":
         code for training language model.
         change this to different values, or use it to get you started with your own testing class
         '''
-        train_size = 1000 # 25000 Change for 2b)
+        train_size = 25000 # 25000 Change for 2b)
         dev_size = 1000
         vocab_size = 2000
 
@@ -416,6 +417,11 @@ if __name__ == "__main__":
         S_dev = docs_to_indices(docs, word_to_num, 1, 1)
         X_dev, D_dev = seqs_to_lmXY(S_dev)
 
+        # Load the test set
+        docs = load_lm_dataset(data_folder + '/wiki-test.txt')
+        S_test = docs_to_indices(docs, word_to_num, 1, 1)
+        X_test, D_test = seqs_to_lmXY(S_test)
+
         X_train = X_train[:train_size]
         D_train = D_train[:train_size]
         X_dev = X_dev[:dev_size]
@@ -426,10 +432,11 @@ if __name__ == "__main__":
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
         if mode == "hyperparameter":
-            hidden_dim_params = [25, 50]
-            lr_params = [0.5, 0.1, 0.05]
-            lookback_params = [0, 2, 5]
-            min_loss = None
+            # Best params:
+            hidden_dim_params = [25, 50] # 25
+            lr_params = [0.5, 0.1, 0.05] # 0.5
+            lookback_params = [0, 2, 5]  # 5
+            min_loss = None # 4.933136297644713
             best_hidden_dim = None
             best_lr = None
             best_lookback = None
@@ -443,7 +450,7 @@ if __name__ == "__main__":
 
                         run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
                         adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
-                        print("Cross Entropy Loss: %.03f" % np.exp(run_loss))
+                        print("Cross Entropy Loss: %.03f" % run_loss)
                         print()
                         if min_loss == None:
                             min_loss = run_loss
@@ -453,26 +460,34 @@ if __name__ == "__main__":
                             best_lookback = lookback_param
                             min_loss = run_loss
             print("Best parameters: Hidden Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(best_hidden_dim, best_lr, best_lookback))
+            print("Minimum Loss: {}".format(min_loss))
         else:
             rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
             runner = Runner(rnn)
             runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-            run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
-            adjusted_loss = adjust_loss(run_loss, fraction_lost, q)
+            dev_run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
+            dev_adjusted_loss = adjust_loss(dev_run_loss, fraction_lost, q)
+
+            test_run_loss = runner.compute_mean_loss(X=X_test, D=D_test)
+            test_adjusted_loss = adjust_loss(test_run_loss, fraction_lost, q)
+
+            print("Unadjusted (Dev): %.03f" % np.exp(dev_run_loss))
+            print("Adjusted for missing vocab (Dev): %.03f" % np.exp(dev_adjusted_loss))
+            
+            print("Unadjusted (Test): %.03f" % np.exp(test_run_loss))
+            print("Adjusted for missing vocab (Test): %.03f" % np.exp(test_adjusted_loss))
+
             np.save('rnn.U.npy', rnn.U)
             np.save('rnn.V.npy', rnn.V)
             np.save('rnn.W.npy', rnn.W)
-
-        print("Unadjusted: %.03f" % np.exp(run_loss))
-        print("Adjusted for missing vocab: %.03f" % np.exp(adjusted_loss))
 
     if mode == "train-np-rnn":
         '''
         starter code for parameter estimation.
         change this to different values, or use it to get you started with your own testing class
         '''
-        train_size = 1000
+        train_size = 10000
         dev_size = 1000
         vocab_size = 2000
 
@@ -512,8 +527,7 @@ if __name__ == "__main__":
         runner = Runner(rnn)
         runner.train_np(X=X_train, D=Y_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)])
-
+        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
         print("Accuracy: %.03f" % acc)
 
     if mode == "train-np-gru":
