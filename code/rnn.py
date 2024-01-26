@@ -117,7 +117,7 @@ class RNN(Model):
 		'''
 		t = len(x)-1
 		# deltaW Updates
-		one_hot_dt = make_onehot(d[0], self.vocab_size)
+		one_hot_dt = make_onehot(d[0], self.out_vocab_size)
 		delta_out = one_hot_dt - y[t]
 		self.deltaW = np.outer(delta_out, s[t])
 
@@ -189,7 +189,7 @@ class RNN(Model):
 		'''
 		t = len(x)-1
 		# deltaW Updates
-		one_hot_dt = make_onehot(d[0], self.vocab_size)
+		one_hot_dt = make_onehot(d[0], self.out_vocab_size)
 		delta_out = one_hot_dt - y[t]
 		self.deltaW = np.outer(delta_out, s[t])
 		# Initialise first delta_in value

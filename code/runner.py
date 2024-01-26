@@ -62,7 +62,7 @@ class Runner(object):
         y, _ = self.model.predict(x)
         t = len(x)-1
         log_y_pred = np.log(y[t])
-        one_hot_dt = make_onehot(d[0], self.model.vocab_size)
+        one_hot_dt = make_onehot(d[0], self.model.out_vocab_size)
         loss -= np.dot(one_hot_dt, log_y_pred)
         return loss
 
@@ -466,8 +466,8 @@ if __name__ == "__main__":
             runner = Runner(rnn)
             runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-            dev_run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
-            dev_adjusted_loss = adjust_loss(dev_run_loss, fraction_lost, q)
+            # dev_run_loss = runner.compute_mean_loss(X=X_dev, D=D_dev)
+            # dev_adjusted_loss = adjust_loss(dev_run_loss, fraction_lost, q)
 
             test_run_loss = runner.compute_mean_loss(X=X_test, D=D_test)
             test_adjusted_loss = adjust_loss(test_run_loss, fraction_lost, q)
@@ -476,7 +476,8 @@ if __name__ == "__main__":
             print("Unadjusted Perplexity: %.03f" % np.exp(test_run_loss))
             print("Adjusted Perplexity for missing vocab: %.03f" % np.exp(test_adjusted_loss))
 
-            np.save('rnn.U.npy', rnn.U)
+            np.save('rnn.U.npy', rnn.U)\
+            
             np.save('rnn.V.npy', rnn.V)
             np.save('rnn.W.npy', rnn.W)
 
@@ -521,7 +522,7 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
         runner = Runner(rnn)
         runner.train_np(X=X_train, D=Y_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
@@ -569,10 +570,10 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=vocab_size)
+        gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
         runner = Runner(gru)
-        runner.train(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+        runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)])
+        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
 
         print("Accuracy: %.03f" % acc)

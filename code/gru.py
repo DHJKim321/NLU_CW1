@@ -77,7 +77,7 @@ class GRU(GRUAbstract):
         no return values
         '''
         t = len(x)-1
-        one_hot_dt = make_onehot(d[0], self.vocab_size)
+        one_hot_dt = make_onehot(d[0], self.out_vocab_size)
         delta_output = (one_hot_dt - y[t])
         self.backward(x, t, s, delta_output)
 
@@ -100,6 +100,6 @@ class GRU(GRUAbstract):
         no return values
         '''
         t = len(x)-1
-        one_hot_dt = make_onehot(d[0], self.vocab_size)
+        one_hot_dt = make_onehot(d[0], self.out_vocab_size)
         delta_output = (one_hot_dt - y[t])
         self.backward(x, t, s, delta_output, steps)
