@@ -294,6 +294,7 @@ class Runner(object):
         a0 = learning_rate
 
         best_loss = initial_loss
+        best_acc = initial_acc
         self.model.save_params()
         best_epoch = 0
 
@@ -394,7 +395,7 @@ if __name__ == "__main__":
         hdim = int(sys.argv[3])
         lookback = int(sys.argv[4])
         lr = float(sys.argv[5])
-        mode = sys.argv[6]
+        training_mode = sys.argv[6]
 
         # get the data set vocabulary
         vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0,
@@ -431,7 +432,7 @@ if __name__ == "__main__":
         # this is the best expected loss out of that set
         q = vocab.freq[vocab_size] / sum(vocab.freq[vocab_size:])
 
-        if mode == "hyperparameter":
+        if training_mode == "hyperparameter":
             # Best params:
             hidden_dim_params = [25, 50] # 25
             lr_params = [0.5, 0.1, 0.05] # 0.5
@@ -493,6 +494,7 @@ if __name__ == "__main__":
         hdim = int(sys.argv[3])
         lookback = int(sys.argv[4])
         lr = float(sys.argv[5])
+        training_mode = sys.argv[6]
 
         # get the data set vocabulary
         vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0,
@@ -522,12 +524,30 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
-        runner = Runner(rnn)
-        runner.train_np(X=X_train, D=Y_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+        if training_mode == "hyperparameter":
+            hidden_dim_params = [10, 25, 50]
+            max_acc = -1
+            best_hidden_dim = None
+            for hidden_dim_param in hidden_dim_params:
+                print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hidden_dim_param, lr, lookback))
+                rnn_np = RNN(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=2)
+                runner_np = Runner(rnn_np)
+                runner_np.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
-        print("Accuracy: %.03f" % acc)
+                acc = sum([runner_np.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+                print("Accuracy: %.03f" % acc)
+
+                if acc > max_acc:
+                    max_acc = acc
+                    best_hidden_dim = hidden_dim_param
+            print("Max Accuracy: %.03f" % max_acc)
+        else:
+            rnn = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
+            runner = Runner(rnn)
+            runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+
+            acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+            print("Accuracy: %.03f" % acc)
 
     if mode == "train-np-gru":
         '''
@@ -541,6 +561,7 @@ if __name__ == "__main__":
         hdim = int(sys.argv[3])
         lookback = int(sys.argv[4])
         lr = float(sys.argv[5])
+        training_mode = sys.argv[6]
 
         # get the data set vocabulary
         vocab = pd.read_table(data_folder + "/vocab.wiki.txt", header=None, sep="\s+", index_col=0,
@@ -570,10 +591,27 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
-        runner = Runner(gru)
-        runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+        if training_mode == "hyperparameter":
+            hidden_dim_params = [10, 25, 50]
+            max_acc = -1
+            best_hidden_dim = None
+            for hidden_dim_param in hidden_dim_params:
+                print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hidden_dim_param, lr, lookback))
+                gru = GRU(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=2)
+                runner = Runner(gru)
+                runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
-        acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+                acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+                print("Accuracy: %.03f" % acc)
 
-        print("Accuracy: %.03f" % acc)
+                if acc > max_acc:
+                    max_acc = acc
+                    best_hidden_dim = hidden_dim_param
+            print("Max Accuracy: %.03f" % max_acc)
+        else:
+            gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
+            runner = Runner(gru)
+            runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+
+            acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+            print("Accuracy: %.03f" % acc)
