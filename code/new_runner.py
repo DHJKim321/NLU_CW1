@@ -615,3 +615,27 @@ if __name__ == "__main__":
 
             acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
             print("Accuracy: %.03f" % acc)
+            
+                    
+        if training_mode == "q4":
+            hidden_dim_param = 50
+            lookback_params = [2, 5, 10]
+            lr_param = 0.5
+            max_acc = -1
+            best_hidden_dim = None
+            for lookback_param in lookback_params:
+                print('Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}'.format(hidden_dim_param, lr_param, lookback_param))
+                gru = GRU(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=2)
+                runner = NewRunner(gru)
+                runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr_param, back_steps=lookback_param)
+                
+                acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
+                print("Accuracy: %.03f" % acc)
+                
+                if acc > max_acc:
+                    max_acc = acc
+                    best_hidden_dim = hidden_dim_param
+                    
+            print("Max Accuracy: %.03f" % max_acc)
+            
+        
