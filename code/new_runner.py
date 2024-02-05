@@ -297,7 +297,6 @@ class NewRunner(object):
         best_acc = initial_acc
         self.model.save_params()
         best_epoch = 0
-
         for epoch in range(epochs):
             if anneal > 0:
                 learning_rate = a0 / ((epoch + 0.0 + anneal) / anneal)
@@ -330,11 +329,9 @@ class NewRunner(object):
                     self.model.acc_deltas_np(x_p, d_p, y_p, s_p)
                 else:
                     self.model.acc_deltas_bptt_np(x_p, d_p, y_p, s_p, back_steps)
-
                 if i % batch_size == 0:
                     self.model.scale_gradients_for_batch(batch_size)
                     self.model.apply_deltas(learning_rate)
-
             if len(X) % batch_size > 0:
                 mod = len(X) % batch_size
                 self.model.scale_gradients_for_batch(mod)
@@ -524,13 +521,13 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        if training_mode == "hyperparameter":
-            lookbacks = [2, 5, 10]
+        if training_mode == "q4":
+            lookbacks = [2, 10]
             max_acc = -1
             best_lookback = None
             for lookback in lookbacks:
                 print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hdim, lr, lookback))
-                rnn_np = RNN(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=2)
+                rnn_np = RNN(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
                 runner_np = NewRunner(rnn_np)
                 runner_np.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
 
@@ -591,23 +588,23 @@ if __name__ == "__main__":
         X_dev = X_dev[:dev_size]
         D_dev = D_dev[:dev_size]
 
-        if training_mode == "hyperparameter":
-            hidden_dim_params = [10, 25, 50]
+        if training_mode == "q4":
+            lookback_params = [2, 10]
             max_acc = -1
             best_hidden_dim = None
-            for hidden_dim_param in hidden_dim_params:
-                print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hidden_dim_param, lr, lookback))
-                gru = GRU(vocab_size=vocab_size, hidden_dims=hidden_dim_param, out_vocab_size=2)
+            for lookback_param in lookback_params:
+                print("Params: Hidden Dim = {}, Learning Rate = {}, Lookback = {}".format(hdim, lr, lookback_param))
+                gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
                 runner = NewRunner(gru)
-                runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback)
+                runner.train_np(X=X_train, D=D_train, X_dev=X_dev, D_dev=D_dev, learning_rate=lr, back_steps=lookback_param)
 
                 acc = sum([runner.compute_acc_np(x, d) for x, d in zip(X_dev, D_dev)]) / len(X_dev)
                 print("Accuracy: %.03f" % acc)
 
-                if acc > max_acc:
-                    max_acc = acc
-                    best_hidden_dim = hidden_dim_param
-            print("Max Accuracy: %.03f" % max_acc)
+                # if acc > max_acc:
+                #     max_acc = acc
+                #     best_hidden_dim = hidden_dim_param
+            # print("Max Accuracy: %.03f" % max_acc)
         else:
             gru = GRU(vocab_size=vocab_size, hidden_dims=hdim, out_vocab_size=2)
             runner = NewRunner(gru)

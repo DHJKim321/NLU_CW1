@@ -5,6 +5,7 @@ from rnnmath import *
 from model import Model
 from model import is_delta
 from model import is_param
+import math
 
 
 class GRUAbstract(Model):
@@ -72,6 +73,12 @@ class GRUAbstract(Model):
         self.deltaUz += np.outer(delta_seven, s[t - 1])
         self.deltaVz += np.outer(delta_seven, make_onehot(x[t], self.vocab_size))
         self.deltaUh += np.outer(delta_eight, (s[t - 1] * self.r[t]))
+        # matrix = np.outer(delta_eight, (s[t - 1] * self.r[t]))
+        # magnitude_row = np.linalg.norm(matrix, axis=1)
+        # single_magnitude = math.sqrt(sum(magnitude_row**2))
+        # with open("gru_magnitude.txt", "a") as f:
+        #     f.write("deltaUh: {}".format(single_magnitude))
+        #     f.write("\n")
         self.deltaVh += np.outer(delta_eight, make_onehot(x[t], self.vocab_size))
 
         return delta_eleven + delta_twelve + delta_one + delta_fifteen
@@ -80,8 +87,13 @@ class GRUAbstract(Model):
         self.deltaW += np.outer(delta_output, s[t])
         delta_zero = self.W.T @ delta_output
         delta_next = self.__step__(x, t, delta_zero, s)
-
+        # with open("gru_magnitude.txt", "a") as f:
+        #         f.write("{} {}".format(t, 0))
+        #         f.write("\n")
         for i in range(1, min(steps + 1, t)):
+            # with open("gru_magnitude.txt", "a") as f:
+            #     f.write("{} {}".format(t, i))
+            #     f.write("\n")
             delta_next = self.__step__(x, t - i, delta_next, s)
 
     @abc.abstractmethod

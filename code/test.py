@@ -270,11 +270,11 @@ def test():
 
 	deltaUr_3_exp_np = [[0.00193795, 0.00314452], [0.00195132, 0.00320871]]
 	deltaVr_3_exp_np = [[0.00103786, 0.00190269, 0.00172727], [0.00109623, 0.0025203, 0.00126202]]
-	deltaUz_3_exp_np = [[-0.00942043 -0.01576331], [-0.00216407 -0.00358799]]
-	deltaVz_3_exp_np = [[-0.01069625 -0.00785168 -0.00464374], [-0.00094875 -0.00397553 -0.00080911]]
+	deltaUz_3_exp_np = [[-0.00942043, -0.01576331], [-0.00216407, -0.00358799]]
+	deltaVz_3_exp_np = [[-0.01069625, -0.00785168, -0.00464374], [-0.00094875, -0.00397553, -0.00080911]]
 	deltaUh_3_exp_np = [[0.01726854, 0.02951899], [0.00359722, 0.00635103]]
 	deltaVh_3_exp_np = [[0.01217558, 0.03100759, 0.01551138], [0.00432377, 0.00515261, 0.00275538]]
-	deltaW_GRU_3_exp_np = [[ 0.32036604, 0.47217857], [-0.17640132, -0.25999298], [-0.14396472, -0.21218559]]
+	deltaW_GRU_3_exp_np = [[0.32036604, 0.47217857], [-0.17640132, -0.25999298], [-0.14396472, -0.21218559]]
 
 	y,s = r.predict(x)
 	r.deltaUr.fill(0)
@@ -300,28 +300,36 @@ def test():
 	else:
 		print("s passed")
 
-	if not np.isclose(deltaUr_3_exp_np, r.deltaUr).all() and \
-			np.isclose(deltaVr_3_exp_np, r.deltaVr).all() and \
-			np.isclose(deltaUz_3_exp_np, r.deltaUz).all() and \
-			np.isclose(deltaVz_3_exp_np, r.deltaVz).all() and \
-			np.isclose(deltaUh_3_exp_np, r.deltaUh).all() and \
-			np.isclose(deltaVh_3_exp_np, r.deltaVh).all() and \
-			np.isclose(deltaW_GRU_3_exp_np, r.deltaW).all():
+	not_passed = False
+	if not np.isclose(deltaUr_3_exp_np, r.deltaUr).all():
 		print("    deltaUr expected\n{0}".format(deltaUr_3_exp_np))
 		print("    deltaUr received\n{0}".format(r.deltaUr))
+		not_passed = True
+	if not np.isclose(deltaVr_3_exp_np, r.deltaVr).all():
 		print("    deltaVr expected\n{0}".format(deltaVr_3_exp_np))
 		print("    deltaVr received\n{0}".format(r.deltaVr))
+		not_passed = True
+	if not np.isclose(deltaUz_3_exp_np, r.deltaUz).all():
 		print("    deltaUz expected\n{0}".format(deltaUz_3_exp_np))
 		print("    deltaUz received\n{0}".format(r.deltaUz))
+		not_passed = True
+	if not np.isclose(deltaVz_3_exp_np, r.deltaVz).all():
 		print("    deltaVz expected\n{0}".format(deltaVz_3_exp_np))
 		print("    deltaVz received\n{0}".format(r.deltaVz))
+		not_passed = True
+	if not np.isclose(deltaUh_3_exp_np, r.deltaUh).all():
 		print("    deltaUh expected\n{0}".format(deltaUh_3_exp_np))
 		print("    deltaUh received\n{0}".format(r.deltaUh))
+		not_passed = True
+	if not np.isclose(deltaVh_3_exp_np, r.deltaVh).all():
 		print("    deltaVh expected\n{0}".format(deltaVh_3_exp_np))
 		print("    deltaVh received\n{0}".format(r.deltaVh))
+		not_passed = True
+	if not np.isclose(deltaW_GRU_3_exp_np, r.deltaW).all():
 		print("    deltaW expected\n{0}".format(deltaW_GRU_3_exp_np))
 		print("    deltaW received\n{0}".format(r.deltaW))
-	else:
+		not_passed = True
+	if not not_passed:
 		print("deltaUr passed\n")
 		print("deltaVr passed\n")
 		print("deltaUz passed")

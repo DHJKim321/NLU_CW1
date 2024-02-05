@@ -1,6 +1,7 @@
 # coding: utf-8
 from rnnmath import *
 from model import Model, is_param, is_delta
+import math
 
 class RNN(Model):
 	'''
@@ -205,6 +206,16 @@ class RNN(Model):
 			else:
 				self.deltaV += np.outer(delta_in_T, one_hot_xt)
 				self.deltaU += np.outer(delta_in_T, s[t-t_-1])
+
+				# Log change in deltaU
+				# with open("rnn_deltaU.txt", "a") as f:
+				# 	matrix = np.outer(delta_in_T, s[t-t_-1])
+				# 	magnitude_row = np.linalg.norm(matrix, axis=1)
+				# 	single_magnitude = math.sqrt(sum(magnitude_row**2))
+				# 	f.write("\n")
+				# 	f.write("{}, {}, {}".format(t, t_, single_magnitude))
+
+
 				# Update delta_in to be current value of delta_in_T
 				# delta_in_T = np.dot(np.transpose(self.U), (delta_in_T+1)) * grad(s[t-t_])
 				delta_in = delta_in_T
